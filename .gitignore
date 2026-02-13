@@ -1,0 +1,36 @@
+# DrWatson defaults - generated/large data not version-controlled
+data/
+plots/
+notebooks/.ipynb_checkpoints/
+_research/
+drafts/tmp/
+videos/
+
+# Julia
+Manifest.toml
+*.jl.cov
+*.jl.mem
+*.jl.*.cov
+deps/build.log
+
+# System
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+*.swp
+*.swo
+*~
+
+# Gmsh generated meshes (keep .geo scripts, ignore generated .msh)
+*.msh
+
+# ParaView
+*.pvd
+*.vtu
+*.pvtu
+
+# Temporary
+tmp/
+*.tmp

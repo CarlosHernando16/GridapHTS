@@ -1,0 +1,37 @@
+---
+description: GridapHTS project context, DrWatson conventions, and development workflow
+alwaysApply: true
+---
+
+# GridapHTS Project Context
+
+You are working on **GridapHTS**, a Julia finite element solver for High-Temperature Superconductor (HTS) electromagnetics built on Gridap.jl.
+
+## Key Physics
+- T-A formulation: coupled magnetic vector potential **A** and electric scalar potential **T**
+- Power-law constitutive relation: E = E_c (J/J_c)^n
+- Magnetoquasistatic (no high-frequency radiation)
+- Gauge conditions (Coulomb or tree-cotree) for vector potential uniqueness
+
+## Architecture (follows GridapMHD.jl)
+- `src/GridapHTS.jl`: Main module, includes all submodules
+- `src/main.jl`: Single `main(params::Dict)` entry point dispatching via `Val` types
+- `src/parameters.jl`: `add_default_params()` fills defaults, `validate_params()` checks
+- Modular subdirectories: `Materials/`, `Formulations/`, `Solvers/`, `Gauges/`, `Meshers/`, `Applications/`
+
+## DrWatson Conventions (MANDATORY)
+- Every script MUST start with `using DrWatson; @quickactivate "GridapHTS"`
+- Use `datadir()`, `plotsdir()`, `scriptsdir()`, `srcdir()` for all paths
+- NEVER use hardcoded absolute paths
+- Save results with `@tagsave` for git commit tracking
+- Use `produce_or_load` to avoid re-running expensive computations
+
+## Git Workflow
+- Branches: `feature/<name>`, `bugfix/<desc>`, `phase<N>/<task>`
+- Commits: `<type>(<scope>): <subject>` (feat, fix, docs, test, refactor, perf, chore)
+
+## Development Phases
+1. Foundation & 2D validation (A-formulation) -- **current**
+2. Nonlinear T-A with IESL benchmark validation
+3. 3D geometries + MPI parallelization
+4. Transient electromagnetics & quench modeling

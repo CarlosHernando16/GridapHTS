@@ -1,0 +1,32 @@
+---
+description: Weak form patterns and FE space conventions for electromagnetic formulations
+globs: src/Formulations/**/*.jl
+alwaysApply: false
+---
+
+# Formulations & Physics Rules
+
+## FE Space Selection
+- **2D scalar A** (out-of-plane): `ReferenceFE(lagrangian, Float64, order)`, conformity `:H1`
+- **3D vector A**: `ReferenceFE(nedelec, Float64, order)`, conformity `:Hcurl`
+- **Scalar T**: `ReferenceFE(lagrangian, Float64, order)`, conformity `:H1`
+- **Lagrange multiplier**: `ReferenceFE(lagrangian, Float64, order)`, conformity `:H1`
+
+## Weak Form Structure
+```julia
+# Bilinear: return function (u, v) -> ∫(...)dΩ
+# Linear: return function v -> ∫(...)dΩ
+# Residual: return function ((A,T), (v_A,v_T)) -> ∫(...)dΩ + ∫(...)dΩ_sc
+# Jacobian: return function ((A,T), (dA,dT), (v_A,v_T)) -> ...
+```
+
+## Integration Degree
+Always use `degree >= 2 * order + 1` for accuracy. For nonlinear power-law terms, use `2 * order + 2`.
+
+## Gauge Conditions
+- Coulomb gauge (div A = 0) is **required** for 3D A-formulation uniqueness
+- Implemented via Lagrange multiplier creating saddle-point system
+- For 2D scalar A, gauge is not needed (scalar Poisson is unique with Dirichlet BC)
+
+## Regularization
+Always use `norm_safe()` (with `EPS_REG`) when dividing by `|J|` to avoid NaN in power-law at J = 0.

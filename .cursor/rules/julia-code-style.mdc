@@ -1,0 +1,43 @@
+---
+description: Julia coding standards and Gridap-specific patterns
+globs: **/*.jl
+alwaysApply: false
+---
+
+# Julia Code Style for GridapHTS
+
+## Naming Conventions
+- **Constants**: `SCREAMING_SNAKE_CASE` (e.g., `MU_0`, `E_C_DEFAULT`)
+- **Types**: `PascalCase` (e.g., `PowerLawMaterial`, `AbstractHTSMaterial`)
+- **Functions**: `snake_case` (e.g., `compute_residual`, `solve_newton`)
+- **Private functions**: Leading underscore (e.g., `_build_model`, `_symbolize_keys`)
+- **Modules**: `PascalCase` (e.g., `GridapHTS`)
+
+## Type Stability
+- All functions must be type-stable for performance
+- Use `@code_warntype` to verify hot paths
+- Prefer concrete types in struct fields; use parametric types when needed
+
+## Unicode Operators
+Use mathematical Unicode where natural, with ASCII in identifiers:
+```julia
+# In weak forms: ∇, ×, ⋅ from Gridap
+a(A, v) = ∫(μ_inv * (∇ × A) ⋅ (∇ × v))dΩ
+# In variable names: use ASCII
+mu_inv = 1.0 / mu_0  # not μ⁻¹
+```
+
+## Docstrings (REQUIRED for all exports)
+Every exported function/type must have a docstring with:
+1. Signature line
+2. Description
+3. `# Arguments` section
+4. `# Returns` section
+5. `# Example` block
+6. `# References` if applicable
+
+## Gridap Patterns
+- Use `ReferenceFE(lagrangian, ...)` for H1, `ReferenceFE(nedelec, ...)` for Hcurl
+- Build measures with `Measure(Ω, degree)` where `degree >= 2*order + 1`
+- Use `MultiFieldFESpace` for coupled problems
+- Weak forms return integration results via `∫(...)dΩ`

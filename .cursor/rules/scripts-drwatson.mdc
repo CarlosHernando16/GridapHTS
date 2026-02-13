@@ -1,0 +1,51 @@
+---
+description: DrWatson conventions for simulation scripts
+globs: scripts/**/*.jl
+alwaysApply: false
+---
+
+# Script Conventions (DrWatson)
+
+## Mandatory Preamble
+Every script MUST begin with:
+```julia
+using DrWatson
+@quickactivate "GridapHTS"
+```
+Then load other packages.
+
+## Path Management
+```julia
+# CORRECT
+mesh_file = datadir("meshes", "tape_2d", "rectangular.msh")
+output_dir = plotsdir("phase1")
+results_path = datadir("phase1", "results.jld2")
+
+# WRONG - never hardcode paths
+mesh_file = "/home/user/GridapHTS/data/meshes/rectangular.msh"
+```
+
+## Parameter Sweeps
+```julia
+params_list = dict_list(Dict(
+    :jc => [1e9, 3e10, 1e10],
+    :n_exponent => [15, 25],
+))
+for p in params_list
+    results = run_simulation(p)
+    @tagsave(datadir("sweep", savename(p, "jld2")), results)
+end
+```
+
+## Result Saving
+- Use `@tagsave` to attach git commit hash to saved data
+- Use `produce_or_load` to skip re-running if results exist
+- Always `mkpath()` before writing to new directories
+
+## Script Structure
+1. DrWatson activation
+2. Parameter definition
+3. Simulation execution
+4. Post-processing / error analysis
+5. VTK output
+6. Result saving with `@tagsave`

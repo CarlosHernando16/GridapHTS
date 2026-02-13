@@ -1,0 +1,41 @@
+---
+description: Testing conventions and validation patterns
+globs: test/**/*.jl
+alwaysApply: false
+---
+
+# Testing Patterns
+
+## Structure
+- `test/runtests.jl` includes all test files
+- `test/test_materials.jl` -- material model correctness
+- `test/test_formulations.jl` -- weak form and FE validation
+- `test/test_solvers.jl` -- solver convergence and utilities
+
+## Test Organization
+```julia
+@testset "ComponentName" begin
+    @testset "Specific behavior" begin
+        # Setup
+        # Action
+        # Assert with @test
+    end
+end
+```
+
+## Validation Patterns
+- **Analytical comparison**: Use `isapprox(numerical, analytical, rtol=tol)`
+- **Convergence tests**: Refine mesh and check error decreases
+- **Finite difference**: Verify derivatives with `(f(x+h) - f(x-h)) / 2h`
+- **Limiting cases**: Test n -> infinity, J = 0, B = 0
+
+## Tolerances
+- L2 error for Poisson: `< 0.05` (order 1, 20x20 mesh)
+- Power-law at J_c: `rtol=1e-10` (exact relation)
+- Finite difference derivatives: `rtol=1e-3`
+- Zero-source solutions: `< 1e-10`
+
+## Coverage Requirements
+- Core functionality: >80%
+- Public API: 100%
+- Regression tests for every fixed bug

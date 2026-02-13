@@ -1,0 +1,36 @@
+---
+description: HTS material model interface and constitutive law conventions
+globs: src/Materials/**/*.jl
+alwaysApply: false
+---
+
+# Materials & Constitutive Models
+
+## Abstract Interface
+All materials must subtype `AbstractHTSMaterial` and implement:
+- `resistivity(mat, J_norm)` -> scalar rho [Ohm*m]
+- `electric_field(mat, J::VectorValue)` -> VectorValue E [V/m]
+
+## Power-Law Model (Core)
+```
+E = E_c * (|J| / J_c)^n * (J / |J|)
+rho(|J|) = (E_c / J_c) * (|J| / J_c)^(n-1)
+drho/d|J| = (E_c / J_c^2) * (n-1) * (|J| / J_c)^(n-2)
+```
+
+## Field Dependence
+- Kim model: `J_c(B) = J_c0 / (1 + |B| / B_0)`
+- Always accept both `VectorValue` and scalar `Real` for B
+
+## Material Library
+- Preset constructors: `rebco_default()`, `bscco_default()`
+- `material_from_params(params)` dispatches on `params[:material][:type]`
+
+## Adding New Materials
+1. Create `src/Materials/NewModel.jl`
+2. Define struct subtyping `AbstractHTSMaterial`
+3. Implement `resistivity()` and `electric_field()`
+4. Add to `MaterialLibrary.jl` dispatch
+5. Include in `src/GridapHTS.jl`
+6. Export in `src/exports.jl`
+7. Add tests in `test/test_materials.jl`

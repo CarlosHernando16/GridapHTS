@@ -1,0 +1,36 @@
+name = "GridapHTS"
+uuid = "a7f63e48-b539-41c3-b03c-0bc2611e773c"
+authors = ["Carlo <carlo@magnestar.tech>"]
+version = "0.1.0"
+
+[deps]
+BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+DrWatson = "634d3b9d-ee7a-5ddf-bec9-22491ea816e1"
+FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+Gridap = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
+GridapGmsh = "3025571f-e6a4-4dba-a057-c84c3b89383f"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
+
+[compat]
+BSON = "0.3"
+DataFrames = "1"
+DrWatson = "2"
+FileIO = "1"
+ForwardDiff = "0.10"
+Gridap = "0.18"
+GridapGmsh = "0.7"
+LinearAlgebra = "1"
+SparseArrays = "1"
+WriteVTK = "1"
+julia = "1.10"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

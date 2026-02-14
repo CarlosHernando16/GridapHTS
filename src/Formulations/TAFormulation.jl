@@ -53,6 +53,7 @@ function setup_ta_formulation(params::Dict)
     # Build model
     model = _build_model(params)
     D = num_cell_dims(model)
+    coordinate_system = get_nested(params, :mesh, :coordinate_system; default=:cartesian2d)
 
     # Material
     mat = material_from_params(params)
@@ -102,8 +103,8 @@ function setup_ta_formulation(params::Dict)
 
     # ── Nonlinear FE Operator ────────────────
 
-    res = ta_residual(mat, μ_inv, dΩ, dΩ_sc)
-    jac = ta_jacobian(mat, μ_inv, dΩ, dΩ_sc)
+    res = ta_residual(mat, μ_inv, dΩ, dΩ_sc, D; coordinate_system=coordinate_system)
+    jac = ta_jacobian(mat, μ_inv, dΩ, dΩ_sc, D; coordinate_system=coordinate_system)
 
     op = FEOperator(res, jac, X, Y)
 
@@ -118,6 +119,7 @@ function setup_ta_formulation(params::Dict)
         op     = op,
         mat    = mat,
         μ_inv  = μ_inv,
+        coordinate_system = coordinate_system,
     )
 end
 

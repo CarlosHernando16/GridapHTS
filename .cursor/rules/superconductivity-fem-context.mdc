@@ -1,0 +1,33 @@
+---
+description: Project context for FEM superconductivity modeling decisions
+alwaysApply: true
+---
+
+# FEM Superconductivity Context (GridapHTS)
+
+Use this context when implementing or reviewing formulations in this repository.
+
+## Physics Baseline
+- Assume quasimagnetostatics unless explicitly stated otherwise.
+- Model HTS with power-law `E-J`: `E = Ec (|J|/Jc)^n J/|J|`, with `Jc = Jc(B,T,theta)` when data is available.
+- Treat critical-state behavior as the limiting interpretation (`n -> infinity`) for hysteresis and penetration trends.
+
+## Formulation Choices
+- 2D out-of-plane `A_z`: scalar `H1` FE space.
+- 3D vector `A`: `H(curl)`-conforming space and enforce Coulomb gauge for uniqueness.
+- T-A problems: solve `A` on full domain and `T` on superconducting domains; couple through current source terms.
+
+## Numerical Robustness
+- Use safe norm regularization whenever dividing by `|J|`.
+- Use sufficiently high quadrature for nonlinear terms (at least `2*order+1`, often `2*order+2`).
+- Prefer continuation strategies (e.g., ramp `n`, current, or field) before full nonlinear targets.
+- Keep boundary tags and physical subdomains explicit and validated.
+
+## Validation Expectations
+- Check mesh/time-step convergence for every new nonlinear/transient feature.
+- Compare against analytical or benchmark behavior (penetration fronts, AC loss, magnetization loops).
+- Preserve unit consistency and physically meaningful parameter scales (`Ec`, `Jc`, `n`, `mu`).
+
+## Source Anchors
+- Gridap implementation patterns: Verdugo & Badia, `arXiv:1910.01412v2`.
+- Superconducting multiphysics context: Dutoit/Grilli/Sirois (eds.), *Numerical Modeling of Superconducting Applications*.

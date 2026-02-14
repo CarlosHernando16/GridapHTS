@@ -11,6 +11,7 @@ makedocs(
     pages    = [
         "Home" => "index.md",
         "Formulations" => "formulations.md",
+        "Superconductivity Modeling Context" => "superconductivity_modeling_context.md",
         "Benchmarks" => "benchmarks.md",
         "API Reference" => "api.md",
         "Tutorials" => [

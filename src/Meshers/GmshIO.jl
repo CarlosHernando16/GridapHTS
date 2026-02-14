@@ -10,8 +10,6 @@
 
 Load a Gmsh .msh file and return a Gridap `DiscreteModel`.
 
-Requires GridapGmsh to be loaded.
-
 # Arguments
 - `mesh_file::AbstractString`: Path to .msh file
 
@@ -20,7 +18,6 @@ Requires GridapGmsh to be loaded.
 
 # Example
 ```julia
-using GridapGmsh
 model = load_gmsh_model(datadir("meshes", "tape_2d", "rectangular.msh"))
 ```
 
@@ -32,17 +29,7 @@ function load_gmsh_model(mesh_file::AbstractString)
     isfile(mesh_file) || throw(ArgumentError(
         "Mesh file not found: $mesh_file"))
 
-    # GridapGmsh must be loaded by the caller
-    if !isdefined(Main, :GridapGmsh)
-        error(
-            "GridapGmsh is not loaded. Add `using GridapGmsh` before calling " *
-            "`load_gmsh_model`. GridapGmsh is an optional dependency."
-        )
-    end
-
-    # Use GmshDiscreteModel from GridapGmsh
-    model = Main.GridapGmsh.GmshDiscreteModel(mesh_file)
-    return model
+    return GmshDiscreteModel(mesh_file)
 end
 
 """

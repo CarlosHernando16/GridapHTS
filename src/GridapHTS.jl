@@ -27,6 +27,7 @@ using Gridap.CellData
 using Gridap.ReferenceFEs
 using Gridap.Geometry
 using Gridap.Arrays
+using GridapGmsh
 
 using LinearAlgebra
 using SparseArrays

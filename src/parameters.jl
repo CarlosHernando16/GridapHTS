@@ -21,6 +21,7 @@ function default_params()
         # ── Mesh ─────────────────────────────────
         :mesh => Dict{Symbol,Any}(
             :type      => :cartesian,  # :cartesian or :gmsh
+            :coordinate_system => :cartesian2d, # :cartesian2d or :axisymmetric2d (for 2D)
             :domain    => (0, 1, 0, 1),
             :partition => (20, 20),
             :file      => nothing,     # Path to .msh file (for :gmsh)
@@ -104,10 +105,21 @@ function validate_params(params::Dict)
     mesh = params[:mesh]
     mesh[:type] in (:cartesian, :gmsh) || throw(ArgumentError(
         "Unknown mesh type: $(mesh[:type]). Expected :cartesian or :gmsh"))
+    mesh[:coordinate_system] in (:cartesian2d, :axisymmetric2d) || throw(ArgumentError(
+        "Unknown coordinate_system: $(mesh[:coordinate_system]). " *
+        "Expected :cartesian2d or :axisymmetric2d"))
 
     if mesh[:type] == :gmsh
         isnothing(mesh[:file]) && throw(ArgumentError(
             "Mesh type :gmsh requires :file parameter"))
+    end
+
+    # Axisymmetric 2D requires radial coordinate r >= 0
+    if mesh[:type] == :cartesian && mesh[:coordinate_system] == :axisymmetric2d
+        domain = mesh[:domain]
+        r_min = domain[1]
+        r_min >= 0 || throw(ArgumentError(
+            "Axisymmetric 2D requires radial coordinate r >= 0, got r_min=$r_min"))
     end
 
     mat = params[:material]

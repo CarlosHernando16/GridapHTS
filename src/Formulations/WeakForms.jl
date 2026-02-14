@@ -21,8 +21,16 @@ Construct the curl-curl bilinear form for the A-formulation:
 # Returns
 - Bilinear form function `(A, v) -> ...`
 """
-function a_bilinear_form(μ_inv, dΩ)
-    return (A, v) -> ∫(μ_inv * (∇ × A) ⋅ (∇ × v))dΩ
+function a_bilinear_form(μ_inv, dΩ, D; coordinate_system=:cartesian2d)
+    w = _integration_weight(coordinate_system)
+    if D == 2
+        # In 2D, A is a scalar (out-of-plane component).
+        # The curl-curl operator ∇×(∇×A) reduces to -ΔA.
+        # We use grad(A)⋅grad(v) which is equivalent to (∇×A)⋅(∇×v) for scalar A.
+        return (A, v) -> ∫(w * (μ_inv * (∇(A) ⋅ ∇(v))))dΩ
+    else
+        return (A, v) -> ∫(μ_inv * (∇ × A) ⋅ (∇ × v))dΩ
+    end
 end
 
 """
@@ -41,8 +49,13 @@ where `f` is the source current density J_s.
 # Returns
 - Linear form function `v -> ...`
 """
-function a_linear_form(f, dΩ)
-    return v -> ∫(f ⋅ v)dΩ
+function a_linear_form(f, dΩ, D; coordinate_system=:cartesian2d)
+    w = _integration_weight(coordinate_system)
+    if D == 2
+        return v -> ∫(w * (f * v))dΩ
+    else
+        return v -> ∫(w * (f ⋅ v))dΩ
+    end
 end
 
 """
@@ -89,17 +102,29 @@ where J = -∇T (in the thin-tape approximation) and E = ρ(|J|)J.
 # Returns
 - Residual function `((A, T), (v_A, v_T)) -> ...`
 """
-function ta_residual(mat::PowerLawMaterial, μ_inv, dΩ, dΩ_sc)
+function ta_residual(mat::PowerLawMaterial, μ_inv, dΩ, dΩ_sc, D;
+    coordinate_system=:cartesian2d
+)
+    w = _integration_weight(coordinate_system)
     return ((A, T), (v_A, v_T)) -> begin
         # A-equation: curl-curl over full domain
-        res_A = ∫(μ_inv * (∇ × A) ⋅ (∇ × v_A))dΩ
+        if D == 2
+            # In 2D, J = -∇T is a 2D vector, and A is a scalar.
+            # The coupling ∫ (1/μ)(∇×A)⋅(∇×v_A) dΩ = ∫ J ⋅ v_A dΩ
+            # for scalar A and 2D J doesn't make sense directly in the standard T-A.
+            # Standard T-A in 2D usually uses A as scalar and T as scalar.
+            # For now, we use the scalar-scalar coupling pattern.
+            res_A = ∫(w * (μ_inv * (∇(A) ⋅ ∇(v_A))))dΩ
+        else
+            res_A = ∫(μ_inv * (∇ × A) ⋅ (∇ × v_A))dΩ
+        end
 
         # T-equation: nonlinear resistivity in superconductor
         # J = -∇T, E = ρ(|J|) * J
         J = -∇(T)
         J_norm = norm_safe(J)
         rho = resistivity(mat, J_norm)
-        res_T = ∫(rho * J ⋅ ∇(v_T))dΩ_sc
+        res_T = ∫(w * (rho * (J ⋅ ∇(v_T))))dΩ_sc
 
         res_A + res_T
     end
@@ -116,10 +141,17 @@ Same as [`ta_residual`](@ref).
 # Returns
 - Jacobian function `((A, T), (dA, dT), (v_A, v_T)) -> ...`
 """
-function ta_jacobian(mat::PowerLawMaterial, μ_inv, dΩ, dΩ_sc)
+function ta_jacobian(mat::PowerLawMaterial, μ_inv, dΩ, dΩ_sc, D;
+    coordinate_system=:cartesian2d
+)
+    w = _integration_weight(coordinate_system)
     return ((A, T), (dA, dT), (v_A, v_T)) -> begin
         # A-equation Jacobian: linear curl-curl (w.r.t. dA)
-        jac_AA = ∫(μ_inv * (∇ × dA) ⋅ (∇ × v_A))dΩ
+        if D == 2
+            jac_AA = ∫(w * (μ_inv * (∇(dA) ⋅ ∇(v_A))))dΩ
+        else
+            jac_AA = ∫(μ_inv * (∇ × dA) ⋅ (∇ × v_A))dΩ
+        end
 
         # T-equation Jacobian: nonlinear part (w.r.t. dT)
         J = -∇(T)
@@ -130,10 +162,28 @@ function ta_jacobian(mat::PowerLawMaterial, μ_inv, dΩ, dΩ_sc)
         # ρ(|J|) * ∇(dT)⋅∇(v_T) + dρ/d|J| * (J⋅∇(dT)/|J|) * J⋅∇(v_T)
         dJ = -∇(dT)
         jac_TT = ∫(
-            rho * dJ ⋅ ∇(v_T) +
-            drho * ((J ⋅ dJ) / J_norm) * (J ⋅ ∇(v_T))
+            w * (
+                (rho * (dJ ⋅ ∇(v_T))) +
+                (drho * ((J ⋅ dJ) / J_norm) * (J ⋅ ∇(v_T)))
+            )
         )dΩ_sc
 
         jac_AA + jac_TT
     end
+end
+
+# ── Internal helpers ─────────────────────────
+
+"""
+    _integration_weight(coordinate_system)
+
+Return axisymmetric integration weight for 2D computations:
+- `:cartesian2d`   -> 1
+- `:axisymmetric2d` -> 2πr
+"""
+function _integration_weight(coordinate_system)
+    if coordinate_system == :axisymmetric2d
+        return x -> 2π * max(x[1], EPS_REG)
+    end
+    return x -> 1.0
 end

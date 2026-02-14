@@ -47,6 +47,6 @@ xh, fullparams, info = GridapHTS.main(params)
 ## Contents
 
 ```@contents
-Pages = ["formulations.md", "benchmarks.md", "api.md"]
+Pages = ["formulations.md", "superconductivity_modeling_context.md", "benchmarks.md", "api.md"]
 Depth = 2
 ```

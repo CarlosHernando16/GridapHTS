@@ -50,6 +50,12 @@ using Test
         bad_mesh[:mesh][:type] = :gmsh
         bad_mesh[:mesh][:file] = nothing
         @test_throws ArgumentError validate_params(bad_mesh)
+
+        # Axisymmetric cartesian mesh with negative r is invalid
+        bad_axi = deepcopy(params)
+        bad_axi[:mesh][:coordinate_system] = :axisymmetric2d
+        bad_axi[:mesh][:domain] = (-1.0, 1.0, 0.0, 1.0)
+        @test_throws ArgumentError validate_params(bad_axi)
     end
 
     @testset "String key symbolization" begin

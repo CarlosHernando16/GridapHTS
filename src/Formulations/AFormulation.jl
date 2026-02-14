@@ -44,6 +44,7 @@ function setup_a_formulation(params::Dict)
 
     # Build discrete model
     model = _build_model(params)
+    coordinate_system = get_nested(params, :mesh, :coordinate_system; default=:cartesian2d)
 
     # FE spaces
     # For 2D scalar A (out-of-plane component): use Lagrangian H¹
@@ -78,10 +79,18 @@ function setup_a_formulation(params::Dict)
     if isnothing(source)
         source = D == 2 ? (x -> 0.0) : (x -> VectorValue(0.0, 0.0, 0.0))
     end
+    source_tag = get_nested(params, :source_tag; default=nothing)
 
     # Weak forms
-    a = a_bilinear_form(μ_inv, dΩ)
-    l = a_linear_form(source, dΩ)
+    a = a_bilinear_form(μ_inv, dΩ, D; coordinate_system=coordinate_system)
+    if isnothing(source_tag)
+        l = a_linear_form(source, dΩ, D; coordinate_system=coordinate_system)
+    else
+        Ω_source = Triangulation(model, source_tag)
+        dΩ_source = Measure(Ω_source, degree)
+        source_fun = source isa Number ? (x -> source) : source
+        l = a_linear_form(source_fun, dΩ_source, D; coordinate_system=coordinate_system)
+    end
 
     # FE Operator
     op = AffineFEOperator(a, l, U, V)
@@ -94,6 +103,8 @@ function setup_a_formulation(params::Dict)
         dΩ = dΩ,
         op = op,
         μ_inv = μ_inv,
+        coordinate_system = coordinate_system,
+        source_tag = source_tag,
     )
 end
 
@@ -125,7 +136,7 @@ function _build_model(params::Dict)
         partition = mesh[:partition]
         return CartesianDiscreteModel(domain, partition)
     elseif mesh[:type] == :gmsh
-        error("Gmsh support requires GridapGmsh. Use `load_gmsh_model` instead.")
+        return load_gmsh_model(mesh[:file])
     else
         error("Unknown mesh type: $(mesh[:type])")
     end

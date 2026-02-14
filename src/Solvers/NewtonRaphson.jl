@@ -8,7 +8,7 @@
 # ──────────────────────────────────────────────
 
 """
-    solve_newton(op; max_iter=50, rtol=1e-8, atol=1e-12)
+    solve_newton(op; max_iter=50, rtol=1e-8, atol=1e-12, initial_guess=nothing)
 
 Solve a nonlinear FE operator using Gridap's built-in Newton-Raphson.
 
@@ -17,6 +17,7 @@ Solve a nonlinear FE operator using Gridap's built-in Newton-Raphson.
 - `max_iter::Int`: Maximum Newton iterations
 - `rtol::Float64`: Relative tolerance on residual norm
 - `atol::Float64`: Absolute tolerance on residual norm
+- `initial_guess`: Optional FE function used to warm-start Newton
 
 # Returns
 - `uh`: FE solution
@@ -30,6 +31,7 @@ function solve_newton(op;
     max_iter::Int = 50,
     rtol::Float64 = 1e-8,
     atol::Float64 = 1e-12,
+    initial_guess = nothing,
 )
     nls = NLSolver(;
         show_trace = true,
@@ -39,7 +41,15 @@ function solve_newton(op;
         xtol       = rtol,
     )
     solver = FESolver(nls)
-    uh = solve(solver, op)
+
+    if isnothing(initial_guess)
+        uh = solve(solver, op)
+    else
+        # Warm-start nonlinear solve from the previous continuation step.
+        uh = deepcopy(initial_guess)
+        solve!(uh, solver, op)
+    end
+
     return uh
 end
 
@@ -70,7 +80,7 @@ xh = solve_with_continuation(setup, params, n_schedule)
 
 # Notes
 - Each step rebuilds the nonlinear operator with updated material properties
-- The previous solution is interpolated as initial guess for the next step
+- The previous solution is reused as the initial guess for the next step
 """
 function solve_with_continuation(setup, params, n_schedule)
     @info "Starting n-continuation with schedule: $n_schedule"
@@ -86,9 +96,13 @@ function solve_with_continuation(setup, params, n_schedule)
         # Rebuild material and operator
         mat = material_from_params(params_step)
         μ_inv = setup.μ_inv
+        D = num_cell_dims(setup.model)
+        coordinate_system = get_nested(params_step, :mesh, :coordinate_system; default=:cartesian2d)
 
-        res = ta_residual(mat, μ_inv, setup.dΩ, setup.dΩ_sc)
-        jac = ta_jacobian(mat, μ_inv, setup.dΩ, setup.dΩ_sc)
+        res = ta_residual(mat, μ_inv, setup.dΩ, setup.dΩ_sc, D;
+            coordinate_system=coordinate_system)
+        jac = ta_jacobian(mat, μ_inv, setup.dΩ, setup.dΩ_sc, D;
+            coordinate_system=coordinate_system)
         op = FEOperator(res, jac, setup.X, setup.Y)
 
         # Solve
@@ -97,6 +111,7 @@ function solve_with_continuation(setup, params, n_schedule)
             max_iter = solver_params[:max_iter],
             rtol     = solver_params[:rtol],
             atol     = get(solver_params, :atol, 1e-12),
+            initial_guess = xh,
         )
 
         @info "  Step $i complete."

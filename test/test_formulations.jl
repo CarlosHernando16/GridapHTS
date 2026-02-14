@@ -86,6 +86,32 @@ using Test
         @test l2_norm < 1e-10
     end
 
+    @testset "A-formulation solve (axisymmetric 2D, zero source)" begin
+        params = Dict(
+            :formulation => :A,
+            :fe_order => 1,
+            :mesh => Dict(
+                :type => :cartesian,
+                :coordinate_system => :axisymmetric2d,
+                :domain => (0.0, 1.0, 0.0, 1.0),
+                :partition => (10, 10),
+            ),
+            :material => Dict(:mu => GridapHTS.MU_0),
+            :bcs => Dict(:dirichlet_tags => ["boundary"]),
+        )
+
+        fullparams = add_default_params(params)
+        uh, setup = solve_a_formulation(fullparams)
+
+        @test setup.coordinate_system == :axisymmetric2d
+
+        # With zero source and homogeneous Dirichlet BC, solution should remain ≈ 0.
+        Ω = setup.Ω
+        dΩ = setup.dΩ
+        l2_norm = sqrt(sum(∫(uh * uh)dΩ))
+        @test l2_norm < 1e-10
+    end
+
     @testset "Model builder" begin
         params_cart = Dict(
             :mesh => Dict(
